@@ -1,5 +1,4 @@
-import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
-import { setupBattleGame } from '../game/engine';
+import { FormEvent, useMemo, useState } from 'react';
 
 type Game = {
   name: string;
@@ -7,44 +6,60 @@ type Game = {
   tag: string;
 };
 
-type Phase = 'lobby' | 'battleConfig' | 'dealing' | 'playing';
+type AuthMode = 'signin' | 'signup';
+
+type Account = {
+  nickname: string;
+  email: string;
+  password: string;
+};
+
+const STORAGE_KEY = 'jdc.accounts';
 
 const GAMES: Game[] = [
   { name: 'Bataille', players: '2-4 joueurs', tag: 'Classique' },
   { name: 'Crapette', players: '2 joueurs', tag: 'Duel' },
-  { name: 'Tarot', players: '3-5 joueurs', tag: 'Stratégie' },
-  { name: 'Belote', players: '4 joueurs', tag: 'Équipe' },
-  { name: 'Président', players: '4-7 joueurs', tag: 'Ambiance' },
+  { name: 'Tarot', players: '3-5 joueurs', tag: 'Strategie' },
+  { name: 'Belote', players: '4 joueurs', tag: 'Equipe' },
+  { name: 'President', players: '4-7 joueurs', tag: 'Ambiance' },
   { name: 'Rami', players: '2-6 joueurs', tag: 'Combinaisons' },
   { name: 'Blackjack', players: '1+ joueurs', tag: 'Casino' },
-  { name: 'Poker fermé', players: '2-8 joueurs', tag: 'Bluff' },
+  { name: 'Poker ferme', players: '2-8 joueurs', tag: 'Bluff' },
   { name: 'Speed', players: '2 joueurs', tag: 'Rapide' },
   { name: 'Whist', players: '4 joueurs', tag: 'Plis' }
 ];
 
+function loadAccounts(): Account[] {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) {
+    return [];
+  }
+  try {
+    const parsed = JSON.parse(raw) as Account[];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveAccounts(accounts: Account[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
+}
+
 export function GameShell() {
   const [query, setQuery] = useState('');
+  const [authMode, setAuthMode] = useState<AuthMode>('signin');
   const [nickname, setNickname] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(true);
   const [connectedPlayer, setConnectedPlayer] = useState('');
-  const [phase, setPhase] = useState<Phase>('lobby');
-  const [battlePlayers, setBattlePlayers] = useState(2);
-  const [cardsPerPlayer, setCardsPerPlayer] = useState(0);
-  const [leftoverCards, setLeftoverCards] = useState(0);
-  const [message, setMessage] = useState('');
-  const dealTimerRef = useRef<number | null>(null);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const masterGainRef = useRef<GainNode | null>(null);
+  const [authStatus, setAuthStatus] = useState('');
 
   const displayedGames = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
-
     if (!normalizedQuery) {
       return GAMES;
     }
-
     return GAMES.filter((game) =>
       `${game.name} ${game.tag} ${game.players}`.toLowerCase().includes(normalizedQuery)
     );
@@ -52,123 +67,70 @@ export function GameShell() {
 
   const isConnected = connectedPlayer.length > 0;
 
-  const prepareAmbientMusic = () => {
-    if (audioContextRef.current || typeof window === 'undefined') {
-      return;
-    }
-
-    const context = new window.AudioContext();
-    const masterGain = context.createGain();
-    masterGain.gain.value = 0;
-    masterGain.connect(context.destination);
-
-    const frequencies = [196, 246.94, 329.63];
-    frequencies.forEach((frequency) => {
-      const oscillator = context.createOscillator();
-      const nodeGain = context.createGain();
-      oscillator.type = 'sine';
-      oscillator.frequency.value = frequency;
-      nodeGain.gain.value = 0.012;
-      oscillator.connect(nodeGain);
-      nodeGain.connect(masterGain);
-      oscillator.start();
-    });
-
-    audioContextRef.current = context;
-    masterGainRef.current = masterGain;
+  const clearForm = () => {
+    setNickname('');
+    setEmail('');
+    setPassword('');
   };
 
-  const setAmbientLevel = (level: number) => {
-    const context = audioContextRef.current;
-    const gain = masterGainRef.current;
-    if (!context || !gain) {
-      return;
+  const validateForm = () => {
+    if (!email.trim() || !password.trim()) {
+      setAuthStatus('Email et mot de passe sont obligatoires.');
+      return false;
     }
-    gain.gain.setTargetAtTime(level, context.currentTime, 0.4);
+    if (!email.includes('@')) {
+      setAuthStatus('Email invalide.');
+      return false;
+    }
+    if (password.trim().length < 6) {
+      setAuthStatus('Mot de passe trop court (6 caracteres minimum).');
+      return false;
+    }
+    if (authMode === 'signup' && !nickname.trim()) {
+      setAuthStatus('Pseudo obligatoire pour creer un compte.');
+      return false;
+    }
+    return true;
   };
 
-  const stopAmbientMusic = () => {
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-    }
-    audioContextRef.current = null;
-    masterGainRef.current = null;
-  };
-
-  const handleLogin = (event: FormEvent<HTMLFormElement>) => {
+  const handleAuth = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    if (!nickname.trim() || !email.trim() || !password.trim()) {
-      setMessage('Complète les 3 champs pour te connecter.');
+    if (!validateForm()) {
       return;
     }
 
-    const player = nickname.trim();
-    setConnectedPlayer(player);
-    setMessage(`Bienvenue ${player} ! Sélectionne "Bataille" pour lancer une partie.`);
-    if (rememberMe) {
-      localStorage.setItem('playerNickname', player);
-    }
-  };
+    const accounts = loadAccounts();
+    const normalizedEmail = email.trim().toLowerCase();
 
-  const handleSelectBattle = () => {
-    if (!isConnected) {
-      setMessage('Connecte-toi d abord pour lancer une partie.');
-      return;
-    }
-    setPhase('battleConfig');
-    setMessage('');
-  };
-
-  const handleLaunchBattle = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const setup = setupBattleGame(battlePlayers);
-    setCardsPerPlayer(setup.players[0].length);
-    setLeftoverCards(setup.drawPile.length);
-    prepareAmbientMusic();
-    setPhase('dealing');
-    setMessage('Distribution des cartes en cours...');
-
-    if (dealTimerRef.current) {
-      window.clearTimeout(dealTimerRef.current);
-    }
-
-    dealTimerRef.current = window.setTimeout(() => {
-      setPhase('playing');
-      setMessage('');
-    }, 2800);
-  };
-
-  const handleBackToLobby = () => {
-    setPhase('lobby');
-    setCardsPerPlayer(0);
-    setLeftoverCards(0);
-    stopAmbientMusic();
-    setMessage('');
-  };
-
-  useEffect(() => {
-    if (phase === 'playing') {
-      setAmbientLevel(0.03);
-      return;
-    }
-
-    if (phase === 'dealing') {
-      setAmbientLevel(0.005);
-      return;
-    }
-
-    setAmbientLevel(0);
-  }, [phase]);
-
-  useEffect(() => {
-    return () => {
-      if (dealTimerRef.current) {
-        window.clearTimeout(dealTimerRef.current);
+    if (authMode === 'signup') {
+      const alreadyExists = accounts.some((account) => account.email === normalizedEmail);
+      if (alreadyExists) {
+        setAuthStatus('Ce compte existe deja. Connecte-toi.');
+        return;
       }
-      stopAmbientMusic();
-    };
-  }, []);
+
+      const newAccount: Account = {
+        nickname: nickname.trim(),
+        email: normalizedEmail,
+        password: password.trim()
+      };
+      saveAccounts([...accounts, newAccount]);
+      setConnectedPlayer(newAccount.nickname);
+      setAuthStatus(`Compte cree et valide. Bienvenue ${newAccount.nickname}.`);
+      clearForm();
+      return;
+    }
+
+    const existing = accounts.find((account) => account.email === normalizedEmail);
+    if (!existing || existing.password !== password.trim()) {
+      setAuthStatus('Compte invalide: email ou mot de passe incorrect.');
+      return;
+    }
+
+    setConnectedPlayer(existing.nickname);
+    setAuthStatus(`Connexion validee. Bienvenue ${existing.nickname}.`);
+    clearForm();
+  };
 
   return (
     <main className="app-shell">
@@ -179,18 +141,17 @@ export function GameShell() {
       </div>
 
       <header className="hero">
-        <p className="eyebrow">Plateforme multi-jeux</p>
+        <p className="eyebrow">Phase 1 - Authentification</p>
         <h1>Jeux de cartes</h1>
         <p className="subtitle">
-          Choisis ton mode de jeu et connecte-toi pour préparer tes futures parties sur navigateur
-          et mobile.
+          Avant toute partie, le joueur doit disposer d un compte valide et etre connecte.
         </p>
       </header>
 
       <section className="layout-grid">
         <article className="panel games-panel">
           <div className="panel-head">
-            <h2>Jeux disponibles</h2>
+            <h2>Catalogue des jeux</h2>
             <span className="counter">{displayedGames.length} jeux</span>
           </div>
 
@@ -199,7 +160,7 @@ export function GameShell() {
             <input
               id="game-search"
               type="search"
-              placeholder="Ex: tarot, belote, rapide..."
+              placeholder="Ex: bataille, tarot..."
               value={query}
               onChange={(event) => setQuery(event.target.value)}
             />
@@ -211,40 +172,59 @@ export function GameShell() {
                 <h3>{game.name}</h3>
                 <p>{game.players}</p>
                 <small>{game.tag}</small>
-                {game.name === 'Bataille' ? (
-                  <button type="button" className="play-button" onClick={handleSelectBattle}>
-                    Jouer
-                  </button>
-                ) : (
-                  <button type="button" className="play-button disabled" disabled>
-                    Bientot
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className={`play-button ${isConnected ? '' : 'disabled'}`}
+                  disabled={!isConnected}
+                >
+                  {isConnected ? 'Pret pour phase suivante' : 'Connexion requise'}
+                </button>
               </li>
             ))}
           </ul>
         </article>
 
         <article className="panel login-panel">
-          {phase === 'lobby' ? (
-            <>
-              <h2>Connexion joueur</h2>
-              <p className="login-subtitle">
-                Identification locale pour préparer le profil et l&apos;accès aux futurs lobbies.
-              </p>
+          <h2>{isConnected ? 'Session active' : 'Connexion joueur'}</h2>
+          <p className="login-subtitle">
+            {isConnected
+              ? `Compte valide connecte: ${connectedPlayer}`
+              : 'Inscris-toi ou connecte-toi pour valider la premiere phase.'}
+          </p>
 
-              <form onSubmit={handleLogin} className="login-form">
-                <label htmlFor="nickname">
-                  Pseudo
-                  <input
-                    id="nickname"
-                    type="text"
-                    placeholder="Ton pseudo"
-                    autoComplete="nickname"
-                    value={nickname}
-                    onChange={(event) => setNickname(event.target.value)}
-                  />
-                </label>
+          {!isConnected ? (
+            <>
+              <div className="auth-switch">
+                <button
+                  type="button"
+                  className={authMode === 'signin' ? 'active' : ''}
+                  onClick={() => setAuthMode('signin')}
+                >
+                  Se connecter
+                </button>
+                <button
+                  type="button"
+                  className={authMode === 'signup' ? 'active' : ''}
+                  onClick={() => setAuthMode('signup')}
+                >
+                  S inscrire
+                </button>
+              </div>
+
+              <form onSubmit={handleAuth} className="login-form">
+                {authMode === 'signup' ? (
+                  <label htmlFor="nickname">
+                    Pseudo
+                    <input
+                      id="nickname"
+                      type="text"
+                      placeholder="Ton pseudo"
+                      autoComplete="nickname"
+                      value={nickname}
+                      onChange={(event) => setNickname(event.target.value)}
+                    />
+                  </label>
+                ) : null}
 
                 <label htmlFor="email">
                   Email
@@ -263,91 +243,25 @@ export function GameShell() {
                   <input
                     id="password"
                     type="password"
-                    placeholder="********"
-                    autoComplete="current-password"
+                    placeholder="******"
+                    autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'}
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
                   />
                 </label>
 
-                <label className="remember">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(event) => setRememberMe(event.target.checked)}
-                  />
-                  Se souvenir de moi
-                </label>
-
-                <button type="submit">Se connecter</button>
+                <button type="submit">
+                  {authMode === 'signin' ? 'Valider la connexion' : 'Creer et valider le compte'}
+                </button>
               </form>
             </>
-          ) : null}
+          ) : (
+            <button type="button" onClick={() => setConnectedPlayer('')}>
+              Se deconnecter
+            </button>
+          )}
 
-          {phase === 'battleConfig' ? (
-            <section className="battle-panel">
-              <h2>Parametres - Bataille</h2>
-              <p className="login-subtitle">Joueur connecte: {connectedPlayer}</p>
-
-              <form className="login-form" onSubmit={handleLaunchBattle}>
-                <label htmlFor="battle-players">
-                  Nombre de joueurs (max 4)
-                  <select
-                    id="battle-players"
-                    value={battlePlayers}
-                    onChange={(event) => setBattlePlayers(Number(event.target.value))}
-                  >
-                    <option value={2}>2 joueurs</option>
-                    <option value={3}>3 joueurs</option>
-                    <option value={4}>4 joueurs</option>
-                  </select>
-                </label>
-                <button type="submit">Lancer la partie</button>
-              </form>
-            </section>
-          ) : null}
-
-          {phase === 'dealing' ? (
-            <section className="battle-panel">
-              <h2>Bataille</h2>
-              <p className="login-subtitle">Distribution en cours pour {battlePlayers} joueurs</p>
-              <div className="deal-zone" aria-hidden="true">
-                {Array.from({ length: 12 }).map((_, index) => (
-                  <span
-                    key={`deal-card-${index}`}
-                    className="deal-card"
-                    style={{ animationDelay: `${index * 0.13}s` }}
-                  />
-                ))}
-              </div>
-            </section>
-          ) : null}
-
-          {phase === 'playing' ? (
-            <section className="battle-panel">
-              <h2>Partie lancee - Bataille</h2>
-              <p className="login-subtitle">Bonne partie {connectedPlayer}, musique active.</p>
-
-              <ul className="players-list">
-                {Array.from({ length: battlePlayers }).map((_, index) => (
-                  <li key={`player-${index + 1}`} className="player-item">
-                    Joueur {index + 1}
-                    <span>{cardsPerPlayer} cartes</span>
-                  </li>
-                ))}
-              </ul>
-
-              {leftoverCards > 0 ? (
-                <p className="reserve-note">{leftoverCards} carte(s) restent en pioche reserve.</p>
-              ) : null}
-
-              <button type="button" onClick={handleBackToLobby}>
-                Retour accueil
-              </button>
-            </section>
-          ) : null}
-
-          {message ? <p className="status">{message}</p> : null}
+          {authStatus ? <p className="status">{authStatus}</p> : null}
         </article>
       </section>
     </main>

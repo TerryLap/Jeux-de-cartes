@@ -222,6 +222,30 @@ h2 {
   gap: 0.65rem;
 }
 
+.auth-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.auth-switch button {
+  border: 1px solid rgba(16, 33, 41, 0.2);
+  background: #f7fbfe;
+  color: #214251;
+  height: 2.4rem;
+  border-radius: 0.7rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.auth-switch button.active {
+  background: var(--brand-soft);
+  color: var(--brand);
+  border-color: rgba(13, 73, 109, 0.35);
+}
+
 .login-form label {
   display: grid;
   gap: 0.35rem;
@@ -258,6 +282,19 @@ h2 {
 .login-form button:hover {
   transform: translateY(-1px);
   filter: brightness(1.03);
+}
+
+.login-panel > button {
+  border: none;
+  border-radius: 0.8rem;
+  height: 2.8rem;
+  width: 100%;
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+  font-family: inherit;
+  background: linear-gradient(125deg, #5a6f7d, #3e5663);
+  cursor: pointer;
 }
 
 .status {
