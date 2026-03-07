@@ -31,6 +31,13 @@ body {
   overflow: hidden;
 }
 
+.dashboard-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+
 .orb {
   position: absolute;
   border-radius: 999px;
@@ -146,6 +153,66 @@ body {
   background: linear-gradient(125deg, #5f6f7a, #43545e);
 }
 
+.dashboard-card {
+  width: min(980px, 100%);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(16, 33, 41, 0.15);
+  border-radius: 1.1rem;
+  padding: 1.2rem;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(6px);
+}
+
+.dashboard-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.dashboard-head h1 {
+  margin: 0;
+  color: var(--ink);
+}
+
+.dashboard-head .ghost-btn {
+  width: auto;
+  margin: 0;
+  padding: 0 1rem;
+}
+
+.dashboard-subtitle {
+  margin: 0.6rem 0 0.9rem;
+  color: #35515d;
+}
+
+.games-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.game-tile {
+  border: 1px solid rgba(16, 33, 41, 0.15);
+  background: linear-gradient(120deg, #ffffff, #f4f9fb);
+  border-radius: 0.85rem;
+  padding: 0.85rem;
+}
+
+.game-tile h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+}
+
+.game-tile p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #3c5965;
+}
+
 .submit-btn:hover,
 .ghost-btn:hover {
   transform: translateY(-1px);
@@ -169,5 +236,18 @@ body {
 
   .auth-card h1 {
     font-size: 1.45rem;
+  }
+
+  .dashboard-card {
+    padding: 1rem;
+  }
+
+  .dashboard-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .dashboard-head .ghost-btn {
+    width: 100%;
   }
 }

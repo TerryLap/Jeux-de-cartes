@@ -9,6 +9,7 @@ type Account = {
 };
 
 const STORAGE_KEY = 'jdc.accounts';
+const UPCOMING_GAMES = ['Bataille', 'Crapette', 'Tarot', 'Belote', 'President', 'Autres a definir'];
 
 function loadAccounts(): Account[] {
   const raw = localStorage.getItem(STORAGE_KEY);
@@ -99,6 +100,39 @@ export function GameShell() {
     setAuthStatus(`Bienvenue ${existing.nickname}.`);
     clearForm();
   };
+
+  const handleLogout = () => {
+    setConnectedPlayer('');
+    setAuthStatus('');
+    setAuthMode('signin');
+    clearForm();
+  };
+
+  if (connectedPlayer) {
+    return (
+      <main className="dashboard-page">
+        <section className="dashboard-card">
+          <header className="dashboard-head">
+            <h1>Jeux disponibles</h1>
+            <button type="button" className="ghost-btn" onClick={handleLogout}>
+              Se deconnecter
+            </button>
+          </header>
+
+          <p className="dashboard-subtitle">Connecte en tant que {connectedPlayer}</p>
+
+          <ul className="games-grid">
+            {UPCOMING_GAMES.map((game) => (
+              <li key={game} className="game-tile">
+                <h2>{game}</h2>
+                <p>Liste detaillee a definir prochainement.</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      </main>
+    );
+  }
 
   return (
     <main className="auth-page">
