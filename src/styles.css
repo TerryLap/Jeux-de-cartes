@@ -139,7 +139,8 @@ h2 {
 }
 
 .search-wrap input,
-.login-form input {
+.login-form input,
+.login-form select {
   border: 1px solid rgba(16, 33, 41, 0.22);
   border-radius: 0.7rem;
   height: 2.7rem;
@@ -150,7 +151,8 @@ h2 {
 }
 
 .search-wrap input:focus,
-.login-form input:focus {
+.login-form input:focus,
+.login-form select:focus {
   outline: none;
   border-color: var(--brand);
   box-shadow: 0 0 0 3px rgba(13, 73, 109, 0.15);
@@ -190,6 +192,23 @@ h2 {
   border-radius: 999px;
   font-weight: 600;
   padding: 0.15rem 0.5rem;
+}
+
+.play-button {
+  margin-top: 0.6rem;
+  border: none;
+  border-radius: 0.6rem;
+  background: #123f5b;
+  color: #fff;
+  font-weight: 700;
+  font-family: inherit;
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+}
+
+.play-button.disabled {
+  background: #90a8b4;
+  cursor: not-allowed;
 }
 
 .login-subtitle {
@@ -251,6 +270,76 @@ h2 {
   color: var(--accent);
 }
 
+.battle-panel button {
+  border: none;
+  border-radius: 0.8rem;
+  height: 2.8rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: white;
+  font-family: inherit;
+  background: linear-gradient(125deg, var(--brand), #0e6a78);
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.battle-panel button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+.deal-zone {
+  margin-top: 0.9rem;
+  min-height: 165px;
+  border-radius: 0.9rem;
+  border: 1px dashed rgba(16, 33, 41, 0.2);
+  background: linear-gradient(130deg, #f3f8f8, #edf3ff);
+  position: relative;
+  overflow: hidden;
+}
+
+.deal-card {
+  position: absolute;
+  width: 46px;
+  height: 66px;
+  left: calc(50% - 23px);
+  top: calc(50% - 33px);
+  border-radius: 0.45rem;
+  border: 1px solid rgba(16, 33, 41, 0.2);
+  background: linear-gradient(140deg, #ffffff, #d8e7f7);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+  animation: deal-card 1.2s ease-in-out infinite;
+}
+
+.players-list {
+  list-style: none;
+  margin: 0.4rem 0 0.9rem;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.player-item {
+  border: 1px solid rgba(16, 33, 41, 0.16);
+  border-radius: 0.75rem;
+  padding: 0.6rem 0.7rem;
+  display: flex;
+  justify-content: space-between;
+  background: linear-gradient(120deg, #ffffff, #f2f7f7);
+}
+
+.player-item span {
+  font-weight: 700;
+  color: var(--brand);
+}
+
+.reserve-note {
+  margin-top: -0.2rem;
+  margin-bottom: 0.9rem;
+  font-size: 0.88rem;
+  color: #325261;
+}
+
 @keyframes float {
   0%,
   100% {
@@ -269,6 +358,20 @@ h2 {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes deal-card {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(95px, -55px) rotate(12deg);
+    opacity: 0;
   }
 }
 
