@@ -20,6 +20,26 @@ npm run dev
 
 Application accessible sur `http://localhost:5173`.
 
+## Lancement avec Docker
+
+Version simple pour lancer sans setup local complexe:
+
+```bash
+docker compose up --build
+```
+
+Application accessible sur `http://localhost:8080`.
+
+Commandes utiles:
+
+```bash
+# Lancer en arrière-plan
+docker compose up --build -d
+
+# Arrêter et supprimer le conteneur
+docker compose down
+```
+
 ## Scripts
 
 - `npm run dev`: serveur de développement
@@ -33,6 +53,7 @@ Application accessible sur `http://localhost:5173`.
 - `src/components/`: composants UI
 - `src/game/`: logique de jeu (moteur, règles, modèles)
 - `public/`: assets statiques, icônes PWA
+- `nginx/`: configuration serveur web pour Docker
 
 ## Étapes suivantes recommandées
 

@@ -1,0 +1,10 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: jeux-de-cartes:latest
+    container_name: jeux-de-cartes-app
+    ports:
+      - "8080:80"
+    restart: unless-stopped
