@@ -12,6 +12,7 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [authStatus, setAuthStatus] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const clearForm = () => {
     setNickname('');
@@ -19,11 +20,13 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
     setPassword('');
   };
 
-  const handleAuth = (event: FormEvent<HTMLFormElement>) => {
+  const handleAuth = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setIsSubmitting(true);
 
-    const result = authenticate(authMode, { nickname, email, password });
+    const result = await authenticate(authMode, { nickname, email, password });
     setAuthStatus(result.message);
+    setIsSubmitting(false);
 
     if (!result.success || !result.account) {
       return;
@@ -33,13 +36,29 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
     clearForm();
   };
 
+  const handleQuickStart = () => {
+    setAuthStatus('Mode test active. Acces direct au catalogue.');
+    clearForm();
+    onAuthenticated('Invite');
+  };
+
   return (
     <main className="auth-page">
       <div className="orb orb-a" aria-hidden="true" />
       <div className="orb orb-b" aria-hidden="true" />
 
       <section className="auth-card">
+        <p className="eyebrow">Salon local</p>
         <h1>Jeux de cartes</h1>
+        <p className="auth-intro">
+          Entre dans l&apos;application pour lancer une partie rapide de Bataille ou preparer les prochains jeux du catalogue.
+        </p>
+
+        <div className="auth-feature-list" aria-hidden="true">
+          <span>Partie locale immediate</span>
+          <span>Reprise automatique de session</span>
+          <span>Format mobile et desktop</span>
+        </div>
 
         <div className="auth-switch">
           <button
@@ -98,9 +117,13 @@ export function AuthPage({ onAuthenticated }: AuthPageProps) {
           </label>
 
           <button type="submit" className="submit-btn">
-            {authMode === 'signin' ? 'Se connecter' : 'Creer un compte'}
+            {isSubmitting ? 'Verification...' : authMode === 'signin' ? 'Se connecter' : 'Creer un compte'}
           </button>
         </form>
+
+        <button type="button" className="secondary-btn auth-quickstart" onClick={handleQuickStart}>
+          Tester Bataille sans compte
+        </button>
 
         {authStatus ? <p className="status">{authStatus}</p> : null}
       </section>

@@ -30,4 +30,8 @@ export class LocalStorageAccountRepository {
     this.saveAll([...existing, account]);
     return account;
   }
+
+  clear(): void {
+    localStorage.removeItem(STORAGE_KEY);
+  }
 }
